@@ -1,5 +1,6 @@
-import React, { useCallback, useReducer } from "react";
-import "./NewPlace.css";
+import React from "react";
+import { useForm } from "../../common/hooks/form-hook";
+import "./PlaceForm.css";
 import Input from "../../common/components/FormElements/Input";
 import {
   VALIDATOR_REQUIRE,
@@ -7,33 +8,9 @@ import {
 } from "../../common/components/Util/Validators";
 import Button from "../../common/components/FormElements/Button";
 
-const formReducer = (state, action) => {
-  switch (action.type) {
-    case "INPUT_CHANGE":
-      let formIsValid = true;
-      for (const inputId in state.inputs) {
-        if (inputId === action.inputId) {
-          formIsValid = formIsValid && action.isValid;
-        } else {
-          formIsValid = formIsValid && state.inputs[inputId].isValid;
-        }
-      }
-      return {
-        ...state,
-        input: {
-          ...state.inputs,
-          [action.inputId]: { value: action.value, isValid: action.isValid }
-        },
-        isValid: formIsValid
-      };
-    default:
-      return state;
-  }
-};
-
 const NewPlace = () => {
-  const [formState, dispatch] = useReducer(formReducer, {
-    input: {
+  const [formState, inputHandler] = useForm(
+    {
       title: {
         value: "",
         isValid: false
@@ -41,21 +18,22 @@ const NewPlace = () => {
       description: {
         value: "",
         isValid: false
+      },
+      address: {
+        value: "",
+        isValid: false
       }
     },
-    isValid: false
-  });
-  const inputHandler = useCallback((id, value, isValid) => {
-    dispatch({
-      type: "INPUT_CHANGE",
-      value: value,
-      isValid: isValid,
-      inputId: id
-    });
-  }, []);
+    false
+  );
+
+  const pageSubmitHandler = event => {
+    event.preventDefault();
+    console.log(formState.inputs);
+  };
 
   return (
-    <form className="place-form">
+    <form className="place-form" onSubmit={pageSubmitHandler}>
       <Input
         id="title"
         element="input"
@@ -71,6 +49,14 @@ const NewPlace = () => {
         label="description"
         validators={[VALIDATOR_MINLENGTH(5)]}
         errorText="Please enter a valid description(at least 5 character)"
+        onInput={inputHandler}
+      />
+      <Input
+        id="address"
+        element="input"
+        label="Address"
+        validators={[VALIDATOR_REQUIRE()]}
+        errorText="Please enter a valid address"
         onInput={inputHandler}
       />
       <Button type="submit" disabled={!formState.isValid}>
