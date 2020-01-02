@@ -31,7 +31,10 @@ const Auth = () => {
   const switchModeHandler = () => {
     if (!isLoginMode) {
       setFormData(
-        { ...formState.inputs, name: undefined },
+        {
+          ...formState.inputs,
+          name: undefined
+        },
         formState.inputs.email.isValid && formState.inputs.password.isValid
       );
     } else {
@@ -63,10 +66,10 @@ const Auth = () => {
           <Input
             element="input"
             id="name"
-            types="text"
-            label="User Name"
-            validators={VALIDATOR_REQUIRE()}
-            errorText="Please enter a username"
+            type="text"
+            label="Your Name"
+            validators={[VALIDATOR_REQUIRE()]}
+            errorText="Please enter a name."
             onInput={inputHandler}
           />
         )}
@@ -74,9 +77,9 @@ const Auth = () => {
           element="input"
           id="email"
           type="email"
-          label="Email"
+          label="E-Mail"
           validators={[VALIDATOR_EMAIL()]}
-          errorText="Please enter a valid email address"
+          errorText="Please enter a valid email address."
           onInput={inputHandler}
         />
         <Input
@@ -85,16 +88,16 @@ const Auth = () => {
           type="password"
           label="Password"
           validators={[VALIDATOR_MINLENGTH(5)]}
-          errorText="Please enter a valid password(at least 5 char)"
+          errorText="Please enter a valid password, at least 5 characters."
           onInput={inputHandler}
         />
         <Button type="submit" disabled={!formState.isValid}>
-          {isLoginMode ? "Login" : "Sign Up"}
-        </Button>
-        <Button inverse onClick={switchModeHandler}>
-          Switch to {isLoginMode ? "Sign Up" : "Login"}
+          {isLoginMode ? "LOGIN" : "SIGNUP"}
         </Button>
       </form>
+      <Button inverse onClick={switchModeHandler}>
+        SWITCH TO {isLoginMode ? "SIGNUP" : "LOGIN"}
+      </Button>
     </Card>
   );
 };
