@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState, useContext } from "react";
+import { useParams, useHistory } from "react-router-dom";
 import { useForm } from "../../common/hooks/form-hook";
 import "./PlaceForm.css";
 import Input from "../../common/components/FormElements/Input";
@@ -9,39 +9,17 @@ import {
 } from "../../common/components/Util/Validators";
 import Button from "../../common/components/FormElements/Button";
 import Card from "../../common/components/UIElement/Card";
-
-const DummyPlaces = [
-  {
-    id: "p1",
-    title: "Koln cathedral",
-    description: "Best cathedral in NRW",
-    imageUrl:
-      "https://www.tripsavvy.com/thmb/Uw4CfhbFrHw9tZZFPedaZnwVJQ0=/960x0/filters:no_upscale():max_bytes(150000):strip_icc()/CologneCathedral3-1489e8cf1ce94daaa05cfc585fedbeb1.jpg",
-    address: "Domkloster 4, 50667 Köln",
-    location: {
-      lat: 50.9412784,
-      lng: 6.9582814
-    },
-    creator: "u1"
-  },
-  {
-    id: "p2",
-    title: "Dusseldorf cathedral",
-    description: "Best cathedral in NRW",
-    imageUrl:
-      "https://www.tripsavvy.com/thmb/Uw4CfhbFrHw9tZZFPedaZnwVJQ0=/960x0/filters:no_upscale():max_bytes(150000):strip_icc()/CologneCathedral3-1489e8cf1ce94daaa05cfc585fedbeb1.jpg",
-    address: "Domkloster 4, 50667 Köln",
-    location: {
-      lat: 50.9412784,
-      lng: 6.9582814
-    },
-    creator: "u2"
-  }
-];
+import { useHttpClient } from "../../common/hooks/http-hook";
+import LoadingSpinner from "../../common/components/UIElement/LoadingSpinner";
+import ErrorModal from "../../common/components/UIElement/ErrorModal";
+import { AuthContext } from "../../common/context/auth-context";
 
 const UpdatePlace = props => {
-  const [isLoading, setIsLoading] = useState(true);
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
+  const [loadedPlace, setLoadedPlace] = useState();
   const placeId = useParams().placeId;
+  const history = useHistory();
+  const auth = useContext(AuthContext);
 
   const [formState, inputHandler, setFormData] = useForm(
     {
@@ -57,34 +35,58 @@ const UpdatePlace = props => {
     false
   );
 
-  const identifiedPlace = DummyPlaces.find(p => p.id === placeId);
-
   useEffect(() => {
-    if (identifiedPlace) {
-      setFormData(
-        {
-          title: {
-            value: identifiedPlace.title,
-            isValid: true
+    const fetchPlace = async () => {
+      try {
+        const responseData = await sendRequest(
+          `http://localhost:5000/api/places/${placeId}`
+        );
+        setLoadedPlace(responseData.place);
+        setFormData(
+          {
+            title: {
+              value: responseData.place.title,
+              isValid: true
+            },
+            description: {
+              value: responseData.place.description,
+              isValid: true
+            }
           },
-          description: {
-            value: identifiedPlace.description,
-            isValid: true
-          }
-        },
-        true
-      );
-    }
+          true
+        );
+      } catch (err) {}
+    };
+    fetchPlace();
+  }, [sendRequest, placeId, setFormData]);
 
-    setIsLoading(false);
-  }, [setFormData, identifiedPlace]);
-
-  const placeUpdateSubmitHandler = event => {
+  const placeUpdateSubmitHandler = async event => {
     event.preventDefault();
-    console.log(formState.inputs);
+    try {
+      await sendRequest(
+        `http://localhost:5000/api/places/${placeId}`,
+        "PATCH",
+        JSON.stringify({
+          title: formState.inputs.title.value,
+          description: formState.inputs.description.value
+        }),
+        {
+          "Content-Type": "application/json"
+        }
+      );
+      history.push("/" + auth.userId + "/places");
+    } catch (err) {}
   };
 
-  if (!identifiedPlace) {
+  if (isLoading) {
+    return (
+      <div className="center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!loadedPlace && !error) {
     return (
       <div className="center">
         <Card>
@@ -94,41 +96,38 @@ const UpdatePlace = props => {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="center">
-        <h2>Loading...</h2>
-      </div>
-    );
-  }
-
   return (
-    <form className="place-form" onSubmit={placeUpdateSubmitHandler}>
-      <Input
-        id="title"
-        element="input"
-        type="text"
-        label="Title"
-        validators={[VALIDATOR_REQUIRE()]}
-        errorText="Please enter a valid title"
-        onInput={inputHandler}
-        initialValue={formState.inputs.title.value}
-        initialValid={formState.inputs.title.isValid}
-      />
-      <Input
-        id="description"
-        element="input"
-        label="Description"
-        validators={[VALIDATOR_MINLENGTH(5)]}
-        errorText="Please enter a valid description"
-        onInput={inputHandler}
-        initialValue={formState.inputs.description.value}
-        initialValid={formState.inputs.description.isValid}
-      />
-      <Button type="submit" disabled={!formState.isValid}>
-        Update Place
-      </Button>
-    </form>
+    <>
+      <ErrorModal error={error} onClear={clearError} />
+      {!isLoading && loadedPlace && (
+        <form className="place-form" onSubmit={placeUpdateSubmitHandler}>
+          <Input
+            id="title"
+            element="input"
+            type="text"
+            label="Title"
+            validators={[VALIDATOR_REQUIRE()]}
+            errorText="Please enter a valid title"
+            onInput={inputHandler}
+            initialValue={loadedPlace.title}
+            initialValid={true}
+          />
+          <Input
+            id="description"
+            element="input"
+            label="Description"
+            validators={[VALIDATOR_MINLENGTH(5)]}
+            errorText="Please enter a valid description"
+            onInput={inputHandler}
+            initialValue={loadedPlace.description}
+            initialValid={true}
+          />
+          <Button type="submit" disabled={!formState.isValid}>
+            Update Place
+          </Button>
+        </form>
+      )}
+    </>
   );
 };
 
