@@ -1,40 +1,41 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import PlaceList from "../components/PlaceList";
-
-const DummyPlaces = [
-  {
-    id: "p1",
-    title: "Koln cathedral",
-    description: "Best cathedral in NRW",
-    imageUrl:
-      "https://www.tripsavvy.com/thmb/Uw4CfhbFrHw9tZZFPedaZnwVJQ0=/960x0/filters:no_upscale():max_bytes(150000):strip_icc()/CologneCathedral3-1489e8cf1ce94daaa05cfc585fedbeb1.jpg",
-    address: "Domkloster 4, 50667 Köln",
-    location: {
-      lat: 50.9412784,
-      lng: 6.9582814
-    },
-    creator: "u1"
-  },
-  {
-    id: "p2",
-    title: "Dusseldorf cathedral",
-    description: "Best cathedral in NRW",
-    imageUrl:
-      "https://www.tripsavvy.com/thmb/Uw4CfhbFrHw9tZZFPedaZnwVJQ0=/960x0/filters:no_upscale():max_bytes(150000):strip_icc()/CologneCathedral3-1489e8cf1ce94daaa05cfc585fedbeb1.jpg",
-    address: "Domkloster 4, 50667 Köln",
-    location: {
-      lat: 50.9412784,
-      lng: 6.9582814
-    },
-    creator: "u2"
-  }
-];
+import { useHttpClient } from "../../common/hooks/http-hook";
+import ErrorModal from "../../common/components/UIElement/ErrorModal";
+import LoadingSpinner from "../../common/components/UIElement/LoadingSpinner";
 
 const UserPlaces = () => {
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
+  const [loadedPlaces, setLoadedPlaces] = useState();
   const userId = useParams().userId;
-  const myPlaces = DummyPlaces.filter(place => place.creator === userId);
-  return <PlaceList items={myPlaces} />;
+  console.log(userId);
+
+  useEffect(() => {
+    console.log("entering here");
+    const fetchPlaces = async () => {
+      try {
+        const responseData = await sendRequest(
+          `http://localhost:5000/api/places/user/${userId}`
+        );
+        console.log(responseData);
+        setLoadedPlaces(responseData.places);
+      } catch (err) {}
+    };
+    fetchPlaces();
+  }, [sendRequest, userId]);
+
+  return (
+    <>
+      <ErrorModal error={error} onClear={clearError} />
+      {isLoading && (
+        <div className="center">
+          <LoadingSpinner />
+        </div>
+      )}
+      {!isLoading && loadedPlaces && <PlaceList items={loadedPlaces} />}
+    </>
+  );
 };
 
 export default UserPlaces;
