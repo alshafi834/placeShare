@@ -1,4 +1,4 @@
-const uuid = require("uuid/v4");
+const fs = require("fs");
 const { validationResult } = require("express-validator");
 const getCoordsForAddress = require("../util/location");
 const mongoose = require("mongoose");
@@ -85,8 +85,7 @@ const createdPlace = async (req, res, next) => {
     description,
     address,
     location: coordinates,
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Cologne_cathedral_aerial_%2825326253726%29.jpg/275px-Cologne_cathedral_aerial_%2825326253726%29.jpg",
+    image: req.file.path,
     creator
   });
 
@@ -177,6 +176,8 @@ const deletePlaceById = async (req, res, next) => {
     return next(error);
   }
 
+  const imagePath = placeToDelete.image;
+
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
@@ -191,6 +192,11 @@ const deletePlaceById = async (req, res, next) => {
     );
     return next(error);
   }
+
+  fs.unlink(imagePath, err => {
+    console.log(err);
+  });
+
   res.status(200).json({ message: "place deleted" });
 };
 

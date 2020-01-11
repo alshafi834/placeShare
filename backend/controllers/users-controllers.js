@@ -40,8 +40,7 @@ const signup = async (req, res, next) => {
   const createdUser = new User({
     name,
     email,
-    image:
-      "https://pbs.twimg.com/profile_images/1055263632861343745/vIqzOHXj.jpg",
+    image: req.file.path,
     password,
     places: []
   });

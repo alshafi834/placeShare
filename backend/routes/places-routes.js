@@ -1,5 +1,6 @@
 const express = require("express");
 const { check } = require("express-validator");
+const fileUpload = require("../middleware/file-upload");
 
 const placesControllers = require("../controllers/places-controllers");
 
@@ -9,6 +10,7 @@ router.get("/:pid", placesControllers.getPlacesById);
 router.get("/user/:uid", placesControllers.getPlaceByUserId);
 router.post(
   "/",
+  fileUpload.single("image"),
   [
     check("title")
       .not()
