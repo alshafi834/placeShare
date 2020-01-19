@@ -78,7 +78,7 @@ const createdPlace = async (req, res, next) => {
     throw new HttpError("invalid input passed in req body", 422);
   }
 
-  const { title, description, address, creator } = req.body;
+  const { title, description, address } = req.body;
   let coordinates = getCoordsForAddress(address);
   const createdPlace = new Place({
     title,
@@ -86,12 +86,12 @@ const createdPlace = async (req, res, next) => {
     address,
     location: coordinates,
     image: req.file.path,
-    creator
+    creator: req.userData.userId
   });
 
   let user;
   try {
-    user = await User.findById(creator);
+    user = await User.findById(req.userData.userId);
   } catch (err) {
     const error = new HttpError("Creating place failed", 500);
     return next(error);
@@ -119,7 +119,7 @@ const createdPlace = async (req, res, next) => {
   res.status(201).json({ place: createdPlace });
 };
 
-//To update a place
+//To update a place--------------------------------------------------------------------------------->
 const updatePlaceById = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -140,6 +140,11 @@ const updatePlaceById = async (req, res, next) => {
     return next(error);
   }
 
+  if (updatedPlace.creator.toString() !== req.userData.userId) {
+    const error = new HttpError("You are not allowed to edit this place", 401);
+    return next(error);
+  }
+
   updatedPlace.title = title;
   updatedPlace.description = description;
 
@@ -156,7 +161,7 @@ const updatePlaceById = async (req, res, next) => {
   res.status(200).json({ place: updatedPlace.toObject({ getters: true }) });
 };
 
-//To delete a place
+//To delete a place-------------------------------------------------------------------------------->
 const deletePlaceById = async (req, res, next) => {
   const placeId = req.params.pid;
 
@@ -173,6 +178,14 @@ const deletePlaceById = async (req, res, next) => {
 
   if (!placeToDelete) {
     const error = new HttpError("Could not find this place for this id", 404);
+    return next(error);
+  }
+
+  if (placeToDelete.creator.id !== req.userData.userId) {
+    const error = new HttpError(
+      "You are not allowed to delete this place",
+      401
+    );
     return next(error);
   }
 

@@ -49,10 +49,10 @@ app.use((error, req, res, next) => {
 
 mongoose
   .connect(
-    "mongodb+srv://alshafi:alshafi834@cluster0-asrk4.gcp.mongodb.net/places?retryWrites=true&w=majority"
+    `mongodb+srv://${process.env.DB_User}:${process.env.DB_Password}@cluster0-asrk4.gcp.mongodb.net/${process.env.DB_Name}?retryWrites=true&w=majority`
   )
   .then(() => {
-    app.listen(5000);
+    app.listen(process.env.PORT || 5000);
   })
   .catch(err => {
     console.log(err);
